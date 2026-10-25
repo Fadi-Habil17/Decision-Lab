@@ -4,6 +4,9 @@ import { simulateAuthPreview } from '../../demo/authPreview'
 import { useDemoSession } from '../../demo/session'
 import Button from '../ui/Button'
 import TextInput from '../ui/TextInput'
+import BrandLogo from '../ui/BrandLogo'
+import AuthArtwork from './AuthArtwork'
+import AuthIcon from './AuthIcon'
 import '../../styles/auth.css'
 
 interface AuthFormProps {
@@ -17,7 +20,8 @@ const emptyValues = { name: '', email: '', password: '' }
 
 function AuthForm({ mode }: AuthFormProps) {
   const location = useLocation()
-  const returnTo = location.state?.returnTo === '/decisions/new' ? '/decisions/new' : undefined
+  const returnTo =
+    location.state?.returnTo === '/decisions/new' ? '/decisions/new' : undefined
   const isRegister = mode === 'register'
   const headingId = useId()
   const formRef = useRef<HTMLFormElement>(null)
@@ -26,6 +30,7 @@ function AuthForm({ mode }: AuthFormProps) {
   const [values, setValues] = useState(emptyValues)
   const [errors, setErrors] = useState<FieldErrors>({})
   const [busy, setBusy] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [feedback, setFeedback] = useState<'idle' | 'success' | 'error'>('idle')
 
   useEffect(() => {
@@ -90,6 +95,7 @@ function AuthForm({ mode }: AuthFormProps) {
       if (!controller.signal.aborted) {
         setValues((previous) => ({ ...previous, password: '' }))
         setBusy(false)
+        setShowPassword(false)
       }
       if (pendingRequest.current === controller) pendingRequest.current = null
     }
@@ -99,19 +105,18 @@ function AuthForm({ mode }: AuthFormProps) {
     <section className="auth-page" aria-labelledby={headingId}>
       <div className="auth-card">
         <div className="auth-card-heading">
-          <span className="auth-preview-label">Interactive preview</span>
-          <h1 id={headingId}>{isRegister ? 'Register' : 'Login'}</h1>
+          <span className="auth-preview-label">
+            {isRegister ? 'Join DecisionLab' : 'Welcome to DecisionLab'}
+          </span>
+          <h1 id={headingId}>
+            {isRegister ? 'Create your account' : 'Welcome back'}
+          </h1>
           <p>
             {isRegister
-              ? 'Explore the account creation experience.'
-              : 'Explore the sign-in experience.'}
+              ? 'Start making clearer decisions today.'
+              : 'Make your next decision with confidence.'}
           </p>
         </div>
-
-        <p className="auth-preview-note">
-          This is a preview only. No account will be created and you will not
-          be signed in. You can browse without an account.
-        </p>
 
         <form
           aria-busy={busy}
@@ -122,43 +127,71 @@ function AuthForm({ mode }: AuthFormProps) {
           ref={formRef}
         >
           {isRegister ? (
-            <TextInput
-              autoComplete="name"
-              disabled={busy}
-              error={errors.name}
-              label="Name"
-              name="name"
-              onChange={(event) => updateField('name', event.target.value)}
-              placeholder="Your name"
-              required
-              value={values.name}
-            />
+            <div className="auth-input-wrap">
+              <span className="auth-input-icon">
+                <AuthIcon name="name" />
+              </span>
+              <TextInput
+                autoComplete="name"
+                disabled={busy}
+                error={errors.name}
+                label="Full name"
+                name="name"
+                onChange={(event) => updateField('name', event.target.value)}
+                placeholder="Alex Smith"
+                required
+                value={values.name}
+              />
+            </div>
           ) : null}
-          <TextInput
-            autoCapitalize="none"
-            autoComplete="email"
-            disabled={busy}
-            error={errors.email}
-            label="Email"
-            name="email"
-            onChange={(event) => updateField('email', event.target.value)}
-            placeholder="you@example.com"
-            required
-            spellCheck={false}
-            type="email"
-            value={values.email}
-          />
-          <TextInput
-            autoComplete={isRegister ? 'new-password' : 'current-password'}
-            disabled={busy}
-            error={errors.password}
-            label="Password"
-            name="password"
-            onChange={(event) => updateField('password', event.target.value)}
-            required
-            type="password"
-            value={values.password}
-          />
+          <div className="auth-input-wrap">
+            <span className="auth-input-icon">
+              <AuthIcon name="email" />
+            </span>
+            <TextInput
+              autoCapitalize="none"
+              autoComplete="email"
+              disabled={busy}
+              error={errors.email}
+              label="Email address"
+              name="email"
+              onChange={(event) => updateField('email', event.target.value)}
+              placeholder="you@domain.com"
+              required
+              spellCheck={false}
+              type="email"
+              value={values.email}
+            />
+          </div>
+          <div className="auth-input-wrap auth-input-wrap--password">
+            <span className="auth-input-icon">
+              <AuthIcon name="password" />
+            </span>
+            <TextInput
+              autoComplete={isRegister ? 'new-password' : 'current-password'}
+              disabled={busy}
+              error={errors.password}
+              label="Password"
+              name="password"
+              onChange={(event) => updateField('password', event.target.value)}
+              required
+              type={showPassword ? 'text' : 'password'}
+              placeholder={
+                isRegister ? 'Choose a password' : 'Enter your password'
+              }
+              value={values.password}
+            />
+            <button
+              className="auth-password-toggle"
+              type="button"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-pressed={showPassword}
+              disabled={busy}
+              onClick={() => setShowPassword((visible) => !visible)}
+            >
+              <AuthIcon name={showPassword ? 'eye-off' : 'eye'} />
+            </button>
+          </div>
 
           {feedback === 'error' ? (
             <p className="auth-feedback auth-feedback--error" role="alert">
@@ -179,40 +212,91 @@ function AuthForm({ mode }: AuthFormProps) {
           </p>
 
           <Button disabled={busy} fullWidth type="submit">
-            {busy ? <span className="auth-button-spinner" aria-hidden="true" /> : null}
-            {busy ? 'Please wait…' : isRegister ? 'Register' : 'Login'}
+            {busy ? (
+              <span className="auth-button-spinner" aria-hidden="true" />
+            ) : null}
+            {busy ? 'Please wait…' : isRegister ? 'Create account' : 'Log in'}
           </Button>
         </form>
 
+        <div className="auth-divider" aria-hidden="true">
+          <span>or</span>
+        </div>
         <p className="auth-switch">
           {isRegister ? 'Already have an account?' : 'New to DecisionLab?'}{' '}
-          <Link to={isRegister ? '/login' : '/register'} state={returnTo ? { returnTo } : undefined}>
-            {isRegister ? 'Login' : 'Register'}
+          <Link
+            to={isRegister ? '/login' : '/register'}
+            state={returnTo ? { returnTo } : undefined}
+          >
+            {isRegister ? 'Log in' : 'Create an account'}
           </Link>
+        </p>
+        <p className="auth-preview-note">
+          Preview only. No account will be created and you will not be signed
+          in.
         </p>
       </div>
 
       <div className="auth-intro">
-        <p className="eyebrow">Make room for a better decision</p>
-        <h2 className="auth-intro-title">A little clarity goes a long way.</h2>
-        <p className="auth-intro-description">
-          Put your options side by side, focus on what matters, and understand
-          the choices ahead of you.
-        </p>
-        <div className="auth-steps" aria-label="How DecisionLab works">
-          <div className="auth-step">
-            <span className="auth-step-number" aria-hidden="true">01</span>
-            <div><h3>Explore your options</h3><p>Start with the choices on your mind.</p></div>
-          </div>
-          <div className="auth-step">
-            <span className="auth-step-number" aria-hidden="true">02</span>
-            <div><h3>Weigh what matters</h3><p>Give your priorities a clear place.</p></div>
-          </div>
-          <div className="auth-step">
-            <span className="auth-step-number" aria-hidden="true">03</span>
-            <div><h3>See the bigger picture</h3><p>Understand the reasons behind a result.</p></div>
-          </div>
+        <svg
+          className="auth-waves"
+          viewBox="0 0 600 720"
+          preserveAspectRatio="none"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M0 440C170 570 260 380 375 210S540 100 600 160V720H0Z"
+            fill="#dce3ff"
+            opacity=".65"
+          />
+          <path
+            d="M0 485C170 600 290 370 420 290S550 240 600 260V720H0Z"
+            fill="#b6c5ff"
+            opacity=".7"
+          />
+          <path
+            d="M0 560C140 620 270 420 400 350S560 315 600 350V720H0Z"
+            fill="#a7b9ff"
+            opacity=".45"
+          />
+          <path
+            d="M0 630C170 510 310 760 470 630S570 620 600 600V720H0Z"
+            fill="#dce4ff"
+            opacity=".7"
+          />
+          <path
+            d="M0 700C180 710 220 590 360 665S510 690 600 650V720H0Z"
+            fill="#9aafff"
+            opacity=".4"
+          />
+          <path
+            d="M50 600C180 620 270 365 412 270S530 210 600 220"
+            stroke="#96aeff"
+            strokeDasharray="7 7"
+            opacity=".65"
+          />
+          <g fill="#9eafff" stroke="#e6edff" strokeWidth="2">
+            <circle cx="455" cy="184" r="8" />
+            <circle cx="377" cy="309" r="11" />
+            <circle cx="310" cy="388" r="7" />
+            <circle cx="420" cy="682" r="11" />
+          </g>
+        </svg>
+        <div className="auth-intro-content">
+          <BrandLogo />
+          <h2 className="auth-intro-title">
+            {isRegister
+              ? 'Better questions lead to better decisions.'
+              : 'Turn options into clarity.'}
+          </h2>
+          <p className="auth-intro-description">
+            {isRegister
+              ? 'Bring your options together, weigh what matters, and move forward with confidence.'
+              : 'Compare what matters, weigh your priorities, and see the bigger picture — all in one place.'}
+          </p>
         </div>
+        <AuthArtwork isRegister={isRegister} />
         <Link className="auth-browse-link" to="/decisions">
           Continue browsing decisions <span aria-hidden="true">→</span>
         </Link>

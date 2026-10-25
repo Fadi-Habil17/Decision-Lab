@@ -19,6 +19,37 @@ npm run build
 npm run preview
 ```
 
+## Updated visual design
+
+Both auth pages use the supplied split-panel design: an introduction, lavender
+waves and decorative option cards on the left, and a white form on the right.
+On narrow screens, the form comes first and the introduction follows. The shared
+navigation and public browsing link remain available.
+
+- `src/components/ui/BrandLogo.tsx` and `src/styles/brand.css` provide the shared
+  branching/checkmark logo in the header and introduction. This is a vector
+  interpretation of the supplied image, using system-font lettering, rather than
+  the original image file; the exact original asset can replace it later.
+- `src/components/auth/AuthArtwork.tsx` contains decorative SVG cards. Their
+  example scores are illustration text only, with no decision calculations or
+  connection to the decision store. Decorative artwork is hidden from assistive
+  technology.
+- `src/components/auth/AuthIcon.tsx` provides local field and visibility icons.
+  The password visibility button works with the keyboard, is disabled while
+  submitting, and resets to hidden after the preview completes.
+- `AuthForm.tsx` and `src/styles/auth.css` retain local validation, cancellation,
+  waiting, error and explicit preview-only success feedback. The form labels are
+  **Full name**, **Email address** and **Password**; actions are **Log in** and
+  **Create account**. Existing `/login` and `/register` routes are unchanged.
+
+The reference's password recovery link is deferred until a recovery flow is
+defined; this version does not expose a nonfunctional link. No dependencies,
+external fonts, remote images or API requests were added.
+
+The visual update passed build/lint and Chromium checks of both auth forms,
+validation, simulated errors, waiting and cancellation, keyboard navigation,
+password visibility, mobile/desktop layouts and production preview behavior.
+
 ## Development-only controls
 
 Open `/__preview/auth` directly while using `npm run dev`. This page is deliberately absent from the regular navigation. It is not available in the production build; the app's not-found page handles that route when using `npm run preview`.
