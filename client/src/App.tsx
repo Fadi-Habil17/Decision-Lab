@@ -1,31 +1,68 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
+import LoadingState from './components/ui/LoadingState'
+import { useDemoSession } from './demo/session'
 import AppShell from './layout/AppShell'
+import DecisionsPage from './pages/DecisionsPage'
+import LoginPage from './pages/LoginPage'
+import NewDecisionPage from './pages/NewDecisionPage'
 import NotFoundPage from './pages/NotFoundPage'
 import PlaceholderPage from './pages/PlaceholderPage'
+import RegisterPage from './pages/RegisterPage'
+
+const AuthPreviewPage = import.meta.env.DEV
+  ? lazy(() => import('./pages/AuthPreviewPage'))
+  : null
+
+const DecisionsPreviewPage = import.meta.env.DEV
+  ? lazy(() => import('./pages/DecisionsPreviewPage'))
+  : null
 
 function App() {
+  const { user } = useDemoSession()
   return (
     <AppShell>
       <Routes>
         <Route path="/" element={<Navigate to="/decisions" replace />} />
-        <Route
-          path="/decisions"
-          element={
-            <PlaceholderPage
-              eyebrow="Decision library"
-              title="Your decisions"
-              description="Create a decision, compare your options, and keep track of the choices that matter."
-            />
-          }
-        />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        {AuthPreviewPage && (
+          <Route
+            path="/__preview/auth"
+            element={
+              <Suspense
+                fallback={<LoadingState message="Loading preview tools…" />}
+              >
+                <AuthPreviewPage />
+              </Suspense>
+            }
+          />
+        )}
+        {DecisionsPreviewPage && (
+          <Route
+            path="/__preview/decisions"
+            element={
+              <Suspense
+                fallback={<LoadingState message="Loading preview tools…" />}
+              >
+                <DecisionsPreviewPage />
+              </Suspense>
+            }
+          />
+        )}
+        <Route path="/decisions" element={<DecisionsPage />} />
         <Route
           path="/decisions/new"
           element={
-            <PlaceholderPage
-              eyebrow="Start here"
-              title="Create a decision"
-              description="Start with a blank decision or use a template to organize your criteria."
-            />
+            user ? (
+              <NewDecisionPage />
+            ) : (
+              <Navigate
+                to="/login"
+                replace
+                state={{ returnTo: '/decisions/new' }}
+              />
+            )
           }
         />
         <Route
