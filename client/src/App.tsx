@@ -1,13 +1,33 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
+import LoadingState from './components/ui/LoadingState'
 import AppShell from './layout/AppShell'
+import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
 import PlaceholderPage from './pages/PlaceholderPage'
+import RegisterPage from './pages/RegisterPage'
+
+const AuthPreviewPage = import.meta.env.DEV
+  ? lazy(() => import('./pages/AuthPreviewPage'))
+  : null
 
 function App() {
   return (
     <AppShell>
       <Routes>
         <Route path="/" element={<Navigate to="/decisions" replace />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        {AuthPreviewPage && (
+          <Route
+            path="/__preview/auth"
+            element={
+              <Suspense fallback={<LoadingState message="Loading preview tools…" />}>
+                <AuthPreviewPage />
+              </Suspense>
+            }
+          />
+        )}
         <Route
           path="/decisions"
           element={
