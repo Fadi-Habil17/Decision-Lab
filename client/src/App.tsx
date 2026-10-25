@@ -5,6 +5,7 @@ import { useDemoSession } from './demo/session'
 import AppShell from './layout/AppShell'
 import DecisionsPage from './pages/DecisionsPage'
 import LoginPage from './pages/LoginPage'
+import NewDecisionPage from './pages/NewDecisionPage'
 import NotFoundPage from './pages/NotFoundPage'
 import PlaceholderPage from './pages/PlaceholderPage'
 import RegisterPage from './pages/RegisterPage'
@@ -54,11 +55,7 @@ function App() {
           path="/decisions/new"
           element={
             user ? (
-              <PlaceholderPage
-                eyebrow="Start here"
-                title="Create a decision"
-                description="Start with a blank decision or use a template to organize your criteria."
-              />
+              <NewDecisionPage />
             ) : (
               <Navigate
                 to="/login"

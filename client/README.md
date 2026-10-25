@@ -6,6 +6,9 @@ are documented in [Authentication preview](docs/auth-preview.md).
 The local decision list, ownership previews, and development scenarios are
 documented in [Decisions list preview](docs/decisions-preview.md).
 
+See [Hamid's frontend handoff](docs/frontend-handoff.md) for the completed static
+flows, creation/template previews, verification, and remaining API integration.
+
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
 Currently, two official plugins are available:

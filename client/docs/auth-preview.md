@@ -1,6 +1,6 @@
 # Authentication UI preview
 
-This stage adds the login/register interface and a temporary demo session to the existing React application. It does not authenticate a user, create an account, or contact the backend. Decisions, Templates, Workspace, and Results remain publicly browsable. The subsequent [decisions list stage](decisions-preview.md) adds local list interactions and requires the demo user for the existing New Decision placeholder.
+This stage adds the login/register interface and a temporary demo session to the existing React application. It does not authenticate a user, create an account, or contact the backend. Decisions, Templates, Workspace, and Results remain publicly browsable. The subsequent [decisions list stage](decisions-preview.md) adds local list interactions and requires the demo user for New Decision. The subsequent creation stage adds the local form; see [the frontend handoff](frontend-handoff.md).
 
 ## Run and check
 

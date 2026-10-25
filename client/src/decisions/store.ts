@@ -16,5 +16,8 @@ export function useLocalDecisions() {
     add: service.add,
     retry: service.retry,
     setScenario: service.setScenario,
+    setCreationScenario: service.setCreationScenario,
+    setTemplateScenario: service.setTemplateScenario,
+    retryTemplates: service.retryTemplates,
   }
 }

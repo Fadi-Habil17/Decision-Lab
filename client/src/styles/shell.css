@@ -74,6 +74,15 @@
   gap: 10px;
 }
 
+.decision-debug-snapshot {
+  overflow: auto;
+  max-height: 400px;
+  max-width: 100%;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 1040px) {
   .header-inner {
     flex-wrap: wrap;

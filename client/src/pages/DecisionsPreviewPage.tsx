@@ -4,7 +4,15 @@ import { useLocalDecisions } from '../decisions/store'
 import { useDemoSession } from '../demo/session'
 
 function DecisionsPreviewPage() {
-  const { scenario, setScenario } = useLocalDecisions()
+  const {
+    items,
+    scenario,
+    setScenario,
+    creationScenario,
+    templateScenario,
+    setCreationScenario,
+    setTemplateScenario,
+  } = useLocalDecisions()
   const { user, previewAsUser, logout } = useDemoSession()
   return (
     <section className="demo-preview">
@@ -48,6 +56,9 @@ function DecisionsPreviewPage() {
           </p>
         </div>
         <nav className="demo-preview-actions" aria-label="Preview destinations">
+          <Link className="button button--primary" to="/decisions/new">
+            New decision form
+          </Link>
           <Link className="button button--primary" to="/decisions">
             Open decisions
           </Link>
@@ -55,6 +66,49 @@ function DecisionsPreviewPage() {
             Authentication preview
           </Link>
         </nav>
+        <div className="form-field">
+          <label className="field-label" htmlFor="creation-outcome">
+            Creation outcome
+          </label>
+          <select
+            className="text-input"
+            id="creation-outcome"
+            value={creationScenario}
+            onChange={(event) => {
+              const value = event.target.value
+              if (value === 'success' || value === 'error' || value === 'slow')
+                setCreationScenario(value)
+            }}
+          >
+            <option value="success">Success after 0.7 seconds</option>
+            <option value="error">Error once, then allow retry</option>
+            <option value="slow">Slow success after 5 seconds</option>
+          </select>
+        </div>
+        <div className="form-field">
+          <label className="field-label" htmlFor="template-outcome">
+            Template loading
+          </label>
+          <select
+            className="text-input"
+            id="template-outcome"
+            value={templateScenario}
+            onChange={(event) => {
+              const value = event.target.value
+              if (value === 'success' || value === 'error')
+                setTemplateScenario(value)
+            }}
+          >
+            <option value="success">Success after 0.4 seconds</option>
+            <option value="error">Error until Retry</option>
+          </select>
+        </div>
+        <details>
+          <summary>Inspect local decisions</summary>
+          <pre className="decision-debug-snapshot">
+            {JSON.stringify(items, null, 2)}
+          </pre>
+        </details>
       </div>
     </section>
   )

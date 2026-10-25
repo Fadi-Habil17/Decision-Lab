@@ -13,8 +13,30 @@ export interface DecisionListItem {
 
 export interface NewLocalDecision {
   title: string
-  ownerId: number
   description?: string
+  templateId?: number
 }
+
+export interface LocalCriterion {
+  readonly id: number
+  readonly name: string
+  readonly weight: number
+}
+
+export interface LocalTemplate {
+  readonly id: number
+  readonly name: string
+  readonly description: string
+  readonly criteria: readonly LocalCriterion[]
+}
+
+export interface LocalDecision extends DecisionListItem {
+  readonly createdAt: string
+  readonly templateId?: number
+  readonly criteria: readonly LocalCriterion[]
+}
+
+export type CreationScenario = 'success' | 'error' | 'slow'
+export type TemplateScenario = 'success' | 'error'
 
 export type DecisionListScenario = 'ready' | 'loading' | 'error' | 'empty'

@@ -13,7 +13,7 @@ finalized entries. These names are fixtures, not calculated results. Details lin
 to the existing workspace route; Workspace, Results and Templates are unchanged.
 
 Create New Decision and the existing New Decision navigation allow the demo user
-to reach the existing creation placeholder. Guests go to Login with router state
+to reach the local creation form. Guests go to Login with router state
 `returnTo: '/decisions/new'`. Direct visits to the creation route follow the same
 rule. Login/Register cross-links preserve this allow-listed internal destination.
 Submitting the auth preview still does not sign in or automatically redirect.
@@ -55,7 +55,7 @@ tools remain available at `/__preview/auth`; the two tools pages link to each ot
 - `src/pages/DecisionsPreviewPage.tsx`: development tools only.
 - `src/styles/decisions.css`: list and modal presentation.
 
-The new-decision form, template selection and creation UI belong to stage 3.
+The new-decision form, template selection and creation UI are now implemented in stage 3; see [the frontend handoff](frontend-handoff.md).
 Real API response shapes, persistence, authentication, authorization, server-side
 title/status filtering and HTTP errors remain deferred. There is no fake fetch or
 Axios client and no calculation/ranking logic.
