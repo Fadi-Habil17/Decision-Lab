@@ -34,6 +34,9 @@ export class DecisionResponse {
   @ApiProperty({ type: Number, example: 101 })
   id: number;
 
+  @ApiPropertyOptional({ type: Number, description: 'Numeric application ID of the decision owner.' })
+  ownerId?: number;
+
   @ApiProperty({ type: String })
   title: string;
 

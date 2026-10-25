@@ -8,6 +8,8 @@ import { stripInternalFields } from '../../common/utils/to-json.js';
 import { OptionItem, OptionItemSchema } from './option.schema.js';
 import { ScoreItem, ScoreItemSchema } from './score.schema.js';
 
+export const DECISION_STATUSES = ['Draft', 'Finalized'] as const;
+export type DecisionStatus = (typeof DECISION_STATUSES)[number];
 export type DecisionDocument = HydratedDocument<Decision>;
 
 @Schema({
@@ -22,18 +24,17 @@ export class Decision {
   @Prop({ type: Number, required: true, unique: true })
   id: number;
 
+  @Prop({ type: Number })
+  ownerId?: number;
+
   @Prop({ type: String, required: true, trim: true })
   title: string;
 
   @Prop({ type: String, trim: true, default: '' })
-  description: string;
+  description?: string;
 
-  @Prop({
-    type: String,
-    enum: ['Draft', 'Finalized'],
-    default: 'Draft',
-  })
-  status: 'Draft' | 'Finalized';
+  @Prop({ type: String, enum: DECISION_STATUSES, default: 'Draft' })
+  status: DecisionStatus;
 
   @Prop({ type: Number })
   templateId?: number;
@@ -53,7 +54,6 @@ export class Decision {
   @Prop({ type: [String], default: [] })
   winnerNames: string[];
 
-  // Mongoose manages these through timestamps: true.
   createdAt: Date;
   updatedAt: Date;
 }

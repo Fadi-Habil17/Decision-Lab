@@ -6,6 +6,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -20,6 +21,8 @@ import { DecisionCalculationService } from './decision-calculation.service.js';
 import { DecisionResultResponse } from './responses/decision-result.response.js';
 import type { DecisionDocument } from './schemas/decision.schema.js';
 import { DecisionResponse } from './responses/decision-response.js';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { DecisionOwnerGuard } from '../common/guards/decision-owner.guard.js';
 
 @ApiTags('Decision calculation and lifecycle')
 @ApiNotFoundResponse({ description: 'Decision not found.' })
@@ -39,6 +42,7 @@ export class DecisionCalculationController {
   ) {}
 
   @Post(':id/calculate')
+  @UseGuards(JwtAuthGuard, DecisionOwnerGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Calculate rankings and explanations',
@@ -54,6 +58,7 @@ export class DecisionCalculationController {
   }
 
   @Post(':id/finalize')
+  @UseGuards(JwtAuthGuard, DecisionOwnerGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Finalize a ready Draft decision',
@@ -67,6 +72,7 @@ export class DecisionCalculationController {
   }
 
   @Post(':id/reopen')
+  @UseGuards(JwtAuthGuard, DecisionOwnerGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Reopen a Finalized decision',
