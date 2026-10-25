@@ -2,11 +2,14 @@ import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { AppModule } from './app.module.js';
+import { AppModule, ObserveInstrument, observeEnabled } from './app.module.js';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(
+    AppModule,
+    observeEnabled ? { instrument: ObserveInstrument } : {},
+  );
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -20,13 +23,18 @@ async function bootstrap() {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('DecisionLab API')
-    .setDescription('DecisionLab backend API')
+    .setDescription(
+      'Decision calculation and lifecycle endpoints. Shared contract choices remain provisional until team confirmation.',
+    )
     .setVersion('1.0')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       'access-token',
     )
-    .addApiKey({ type: 'apiKey', in: 'header', name: 'x-internal-tool-key' }, 'internal-tool-key')
+    .addApiKey(
+      { type: 'apiKey', in: 'header', name: 'x-internal-tool-key' },
+      'internal-tool-key',
+    )
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('docs', app, document, { jsonDocumentUrl: 'docs-json' });
