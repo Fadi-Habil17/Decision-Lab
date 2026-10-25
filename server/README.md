@@ -1,118 +1,139 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# DecisionLab
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A weighted decision-making engine. Define options and criteria, weight the criteria (total 100), score every option 1–10, and get a ranked result with a full explanation of why the winner won.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+> **Stop guessing. Start weighing and let the numbers decide.**
 
-## Description
+**Stack:** NestJS 10 · MongoDB (Mongoose) · JWT auth (bcrypt) · Swagger · React 18 + TypeScript (Vite) · TailwindCSS. No external AI/cloud services, no chart libraries.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
+## Quick start
 
 ```bash
-$ npm install
+# 1) MongoDB (any local instance works; or use Docker)
+docker compose up -d
+
+# 2) Backend  → http://localhost:3000   (Swagger UI: /docs, JSON: /docs-json)
+cd backend
+npm install
+cp .env.example .env        # a dev .env is already included — CHANGE JWT_SECRET and the admin password for real use
+npm run start:dev
+
+# 3) Frontend → http://localhost:5173   (proxies /api → backend)
+cd ../frontend
+npm install
+npm run dev
 ```
 
-## Compile and run the project
+On first start with an empty database the backend creates the **Admin** account from `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`, 3 templates (Laptop Purchase, City Relocation, Project Idea) and 2 example decisions owned by the admin (one Draft with full scores, one Finalized — its winner is computed by the engine). Register a normal account in the UI to see the read-only "View Only" mode on those decisions.
+
+**Upgrading an existing database:** on startup, decisions that have no `ownerId` are assigned to the admin account automatically.
+
+### Environment (`backend/.env`)
+| Variable | Purpose |
+|---|---|
+| `PORT` | API port (default 3000) |
+| `MONGODB_URI` | Mongo connection string |
+| `JWT_SECRET` | **Required**, ≥16 chars. The server refuses to start without it |
+| `JWT_EXPIRES_IN` | Token lifetime (default `1d`) |
+| `INTERNAL_TOOL_KEY` | Alternative to an Admin JWT for template mutations (`x-internal-tool-key` header) |
+| `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | First Admin account, created at startup if missing |
+
+## Security model
+
+| Concern | Implementation |
+|---|---|
+| Passwords | `bcrypt`, 10 salt rounds; never logged, never returned (`passwordHash` has `select: false` and is stripped from `toJSON`) |
+| Safe user output | `UsersService.toSafeUser()` — allow-list of `id, email, name, role` |
+| Authentication | `JwtAuthGuard` verifies the signature with `jwtService.verifyAsync()` (never `decode`). Missing/invalid/expired → **401**. Payload `{sub, email}` is attached to `request.user`; read it with `@CurrentUser()` |
+| Authorization (ownership) | Every decision mutation checks `decision.ownerId === currentUser.id`, otherwise **403** `"You do not have permission to modify this decision"` |
+| Authorization (roles) | `@Roles('Admin')` + `RolesGuard`, which reads the role **fresh from MongoDB** (not from the token) |
+| Template mutations | `InternalKeyOrJwtGuard` → valid `x-internal-tool-key` **or** a JWT whose user is currently `Admin`. No credentials → **403** and no log lines; bad token → 401; non-admin → 403 |
+
+Check order for decision edits: **404** (not found) → **403** (not owner) → **409** (finalized).
+
+## API overview
+| Method & path | Access | Notes |
+|---|---|---|
+| `POST /auth/register` | public | `{email, password(8–72), name}` → safe user. 409 if email exists |
+| `POST /auth/login` | public | → `{accessToken, user}`. 401 on bad credentials |
+| `GET /auth/me` | 🔒 JWT | fresh user from the database |
+| `GET /decisions?status=&title=` | public | newest first; `title` = partial, case-insensitive |
+| `GET /decisions/:id`, `GET /decisions/:id/result` | public | read-only view / ranking + explanations |
+| `POST /decisions` | 🔒 JWT | `ownerId` = current user; template criteria are **copied** |
+| `PATCH/DELETE /decisions/:id` | 🔒 owner | 409 when finalized (PATCH) |
+| `POST/PATCH/DELETE /decisions/:id/options[/:optionId]` | 🔒 owner | max 8, unique name (409) |
+| `POST/PATCH/DELETE /decisions/:id/criteria[/:criterionId]` | 🔒 owner | weight 1–100, max 8 |
+| `PUT /decisions/:id/scores` | 🔒 owner | `{optionId, criterionId, score 1–10}` |
+| `POST /decisions/:id/calculate` | 🔒 owner | Draft only. 400 lists weights total / all missing pairs; 409 if finalized |
+| `POST /decisions/:id/finalize` · `/reopen` | 🔒 owner | lock / unlock |
+| `GET /templates`, `GET /templates/:id` | public | |
+| `POST/PATCH/DELETE /templates` | 🔒 Admin or internal key | |
+
+Status codes: **400** invalid input / weights ≠ 100 / missing scores / counts outside 2–8 · **401** not authenticated · **403** not allowed · **404** unknown decision/template · **409** duplicate name, duplicate email or finalized decision · **500** consistent JSON from `AllExceptionsFilter`.
+
+In Swagger (`/docs`): log in via `POST /auth/login`, press **Authorize** and paste the `accessToken`.
+
+## Math
+`contribution = score × weight / 10`, `total = Σ contribution` (10.0–100.0). Ranking uses the exact integer `Σ score×weight` (no float drift). Ties are broken by the score on the highest-weight criterion; if still equal, options share a rank and get `isTied: true`. Each ranked option returns `contributions`, `strongestCriterion`, `weakestCriterion`, `gapToAbove`. The engine is a pure function in `backend/src/decisions/engine/decision-engine.ts` (unit-tested: `npm test`).
+
+## Indexing (Session 14)
+
+The list screen runs `GET /decisions?status=Draft&title=laptop`, i.e. a `status` equality filter plus a case-insensitive partial `title` regex, sorted by `updatedAt`. Indexes on `decisions`:
+
+| Index | Purpose |
+|---|---|
+| `{ status: 1, updatedAt: -1 }` (original) | status filter + newest-first sort |
+| `{ status: 1, title: 1 }` (**added**) | status filter **and** the title regex are both resolved inside the index: MongoDB scans only the `Draft` key range, tests the regex against the index keys, and fetches *only the matching documents* |
+| `{ ownerId: 1 }` | owner lookups |
+
+Measure it with `explain("executionStats")`:
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+cd backend
+npm run explain -- 5000     # inserts 5000 temporary benchmark docs, prints A/B/C below, then removes them
 ```
 
-## Run tests
+```js
+// equivalent in mongosh
+const q = { status: "Draft", title: { $regex: "laptop", $options: "i" } };
+db.decisions.find(q).sort({ updatedAt: -1 }).hint({ $natural: 1 }).explain("executionStats");              // A) no index
+db.decisions.find(q).sort({ updatedAt: -1 }).hint({ status: 1, updatedAt: -1 }).explain("executionStats"); // B) before
+db.decisions.find(q).sort({ updatedAt: -1 }).hint({ status: 1, title: 1 }).explain("executionStats");      // C) after
+```
 
+Paste **your measured** output here (it varies with data size and hardware):
+
+| Plan | Stage chain | keys examined | docs examined | returned | time (ms) |
+|---|---|---|---|---|---|
+| A) no index | COLLSCAN + SORT | _fill in_ | _fill in_ | _fill in_ | _fill in_ |
+| B) before: `{status, updatedAt}` | IXSCAN → FETCH | _fill in_ | _fill in_ | _fill in_ | _fill in_ |
+| C) after: `{status, title}` | IXSCAN → FETCH → SORT | _fill in_ | _fill in_ | _fill in_ | _fill in_ |
+
+What to look for: in **C**, `totalDocsExamined` should be close to `nReturned` (only matching documents are fetched), while in **B** every `Draft` document must be fetched to test its title.
+
+## Relational comparison (Session 17)
+`schema.sql` (repo root) is the PostgreSQL equivalent of the Mongoose model: `users`, `decisions`, `templates`, `options`, `criteria`, `scores` with primary keys, `UNIQUE`/`CHECK` constraints (`weight 1–100`, `score 1–10`, status/role enums) and foreign keys with `ON DELETE CASCADE` (e.g. `FOREIGN KEY (decision_id) REFERENCES decisions(id) ON DELETE CASCADE`). Composite foreign keys guarantee a score's option and criterion belong to the same decision. It is documentation only — the app runs on MongoDB.
+
+## Acceptance checklist — how to verify
+1. **bcrypt:** `POST /auth/register` → response has no `passwordHash`; the stored hash starts with `$2b$10$`.
+2. **401:** `POST /decisions` (or any owner-only route) without a token → 401.
+3. **403:** user B calls `PATCH /decisions/:id/options/...` on user A's decision → 403.
+4. **verifyAsync:** see `backend/src/auth/jwt-auth.guard.ts` (+ `auth.guards.spec.ts`: a forged token is rejected).
+5. **Index docs:** section above (+ `npm run explain`).
+6. **schema.sql:** repo root.
+7. **Templates:** no credentials → 403 with zero service logs; wrong key → 403; Admin JWT or valid key → allowed.
+8. **Earlier rules still hold:** template copy-on-create, missing scores → 400 listing all pairs, weights 105 → 400, finalized → 409, restart keeps data.
+
+## Tests
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+cd backend && npm test
 ```
+Covers the calculation engine (totals, tie-breaks), `JwtAuthGuard`, `InternalKeyOrJwtGuard`, `RolesGuard`, `toSafeUser`, and that the whole Nest dependency graph wires up.
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+## Project layout
 ```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Observability
-
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
-
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
-
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
-
-This project is already instrumented. Create a free account at [observe.nestjs.com](https://observe.nestjs.com), add an application, and paste the generated app key and secret into the `ObserveModule.forRoot()` call in `src/app.module.ts`.
-
-The free plan needs no payment details and covers 300,000 events a month. You can also browse the [live demo](https://www.observe-demo.nestjs.com/dashboard) first - the whole dashboard over a busy service's data, with nothing to install.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observe](https://observe.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+backend/   NestJS API (auth, users, decisions, templates, seed, guards, filter, engine)
+frontend/  React + TS + Tailwind UI (Vite): login/register, ownership-aware workspace & result
+schema.sql PostgreSQL relational equivalent (documentation)
+docker-compose.yml  MongoDB for local development
+```
