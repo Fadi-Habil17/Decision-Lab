@@ -3,6 +3,9 @@
 DecisionLab's static login/register preview and development-only session controls
 are documented in [Authentication preview](docs/auth-preview.md).
 
+The local decision list, ownership previews, and development scenarios are
+documented in [Decisions list preview](docs/decisions-preview.md).
+
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
 Currently, two official plugins are available:

@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { simulateAuthPreview } from '../../demo/authPreview'
 import { useDemoSession } from '../../demo/session'
 import Button from '../ui/Button'
@@ -16,6 +16,8 @@ type FieldErrors = Partial<Record<Field, string>>
 const emptyValues = { name: '', email: '', password: '' }
 
 function AuthForm({ mode }: AuthFormProps) {
+  const location = useLocation()
+  const returnTo = location.state?.returnTo === '/decisions/new' ? '/decisions/new' : undefined
   const isRegister = mode === 'register'
   const headingId = useId()
   const formRef = useRef<HTMLFormElement>(null)
@@ -184,7 +186,7 @@ function AuthForm({ mode }: AuthFormProps) {
 
         <p className="auth-switch">
           {isRegister ? 'Already have an account?' : 'New to DecisionLab?'}{' '}
-          <Link to={isRegister ? '/login' : '/register'}>
+          <Link to={isRegister ? '/login' : '/register'} state={returnTo ? { returnTo } : undefined}>
             {isRegister ? 'Login' : 'Register'}
           </Link>
         </p>

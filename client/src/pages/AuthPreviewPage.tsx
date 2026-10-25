@@ -54,6 +54,7 @@ function AuthPreviewPage() {
           <Link className="button button--primary" to="/login">Login form</Link>
           <Link className="button button--secondary" to="/register">Register form</Link>
           <Link className="button button--ghost" to="/decisions">Browse decisions</Link>
+          <Link className="button button--ghost" to="/__preview/decisions">Decisions preview</Link>
         </nav>
       </div>
     </section>
