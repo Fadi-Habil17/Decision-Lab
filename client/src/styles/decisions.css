@@ -1,0 +1,127 @@
+.decisions-heading {
+  align-items: center;
+}
+.decisions-heading > .button {
+  flex-shrink: 0;
+}
+.decisions-preview-note {
+  color: var(--color-muted);
+  font-size: 0.83rem;
+  margin: -10px 0 24px;
+}
+.decision-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px auto;
+  align-items: end;
+  gap: 16px;
+  padding: 22px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.decision-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.decision-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 26px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+.decision-card-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+.decision-ownership,
+.decision-updated,
+.decision-count {
+  color: var(--color-muted);
+  font-size: 0.83rem;
+}
+.decision-count {
+  margin-block: 24px 16px;
+}
+.decision-card h2 {
+  font-size: 1.2rem;
+}
+.decision-card h2 a {
+  text-decoration: none;
+}
+.decision-card h2 a:hover {
+  color: var(--color-brand-dark);
+  text-decoration: underline;
+}
+.decision-updated {
+  margin: 2px 0 20px;
+}
+.decision-winners {
+  margin: 0 0 20px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  font-size: 0.85rem;
+}
+.decision-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  margin-top: auto;
+}
+.decision-card-actions > button {
+  color: var(--color-danger);
+}
+.decision-announcement {
+  color: var(--color-success);
+  font-size: 0.9rem;
+}
+.decision-announcement:empty {
+  margin: 0;
+}
+.decision-filters ~ .state-panel {
+  margin-top: 24px;
+}
+.confirm-dialog::backdrop {
+  background: rgb(17 24 39 / 48%);
+}
+.confirm-dialog {
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+}
+@media (max-width: 760px) {
+  .decisions-heading {
+    align-items: flex-start;
+  }
+  .decision-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .decision-filters {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .decision-filters > .form-field:first-child {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 380px) {
+  .decision-filters {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px;
+  }
+  .decision-card {
+    padding: 20px;
+  }
+}

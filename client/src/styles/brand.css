@@ -1,0 +1,35 @@
+.decisionlab-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #080b31;
+  white-space: nowrap;
+}
+
+.decisionlab-logo-mark {
+  width: 51px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.decisionlab-logo-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.decisionlab-logo-name {
+  font-size: 1.4rem;
+  font-weight: 850;
+  line-height: 1.2;
+  letter-spacing: -0.055em;
+}
+
+.decisionlab-logo-name > span {
+  color: #4840ed;
+}
+
+.decisionlab-logo-tagline {
+  color: #68748a;
+  font-size: 0.75rem;
+  letter-spacing: 0.005em;
+}
