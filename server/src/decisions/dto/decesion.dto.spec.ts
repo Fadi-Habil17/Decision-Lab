@@ -6,7 +6,7 @@ import {
   UpdateCriterionDto,
   UpdateDecisionDto,
   UpsertScoreDto,
-} from './decision.dto';
+} from './decision.dto.js';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Same options as main.ts, so these tests prove what the real API does.

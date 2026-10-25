@@ -15,9 +15,9 @@ import {
   applyDecorators,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../common/auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
-import {type  JwtPayload } from '../common/types/auth.types';
+import type { SafeUser } from '../users/users.service.js';
 import { DecisionsService } from './decisions.service.js';
 import {
   CreateCriterionDto,
@@ -69,16 +69,16 @@ export class DecisionsController {
   @Authenticated()
   @ApiOperation({ summary: 'Create a decision owned by the logged-in user (blank, or from a template via templateId)' })
   @errors(400, 401, 404)
-  create(@Body() dto: CreateDecisionDto, @CurrentUser() user: JwtPayload) {
-    return this.service.create(dto, user.sub);
+  create(@Body() dto: CreateDecisionDto, @CurrentUser() user: SafeUser) {
+    return this.service.create(dto, user.id);
   }
 
   @Patch(':id')
   @Authenticated()
   @ApiOperation({ summary: 'Update decision title and/or description (owner only)' })
   @errors(400, 401, 403, 404, 409)
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateDecisionDto, @CurrentUser() user: JwtPayload) {
-    return this.service.update(id, dto, user.sub);
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateDecisionDto, @CurrentUser() user: SafeUser) {
+    return this.service.update(id, dto, user.id);
   }
 
   @Delete(':id')
@@ -86,8 +86,8 @@ export class DecisionsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a decision and everything inside it (owner only)' })
   @errors(401, 403, 404)
-  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: JwtPayload) {
-    return this.service.remove(id, user.sub);
+  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: SafeUser) {
+    return this.service.remove(id, user.id);
   }
 
   // ------------------------------------------------------------------ options
@@ -96,8 +96,8 @@ export class DecisionsController {
   @Authenticated()
   @ApiOperation({ summary: 'Add an option to a decision (owner only)' })
   @errors(400, 401, 403, 404, 409)
-  addOption(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateOptionDto, @CurrentUser() user: JwtPayload) {
-    return this.service.addOption(id, dto, user.sub);
+  addOption(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateOptionDto, @CurrentUser() user: SafeUser) {
+    return this.service.addOption(id, dto, user.id);
   }
 
   @Patch(':id/options/:optionId')
@@ -108,9 +108,9 @@ export class DecisionsController {
     @Param('id', ParseIntPipe) id: number,
     @Param('optionId', ParseIntPipe) optionId: number,
     @Body() dto: UpdateOptionDto,
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: SafeUser,
   ) {
-    return this.service.renameOption(id, optionId, dto, user.sub);
+    return this.service.renameOption(id, optionId, dto, user.id);
   }
 
   @Delete(':id/options/:optionId')
@@ -120,9 +120,9 @@ export class DecisionsController {
   removeOption(
     @Param('id', ParseIntPipe) id: number,
     @Param('optionId', ParseIntPipe) optionId: number,
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: SafeUser,
   ) {
-    return this.service.removeOption(id, optionId, user.sub);
+    return this.service.removeOption(id, optionId, user.id);
   }
 
   // ----------------------------------------------------------------- criteria
@@ -131,8 +131,8 @@ export class DecisionsController {
   @Authenticated()
   @ApiOperation({ summary: 'Add a criterion (name + weight) to a decision (owner only)' })
   @errors(400, 401, 403, 404, 409)
-  addCriterion(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateCriterionDto, @CurrentUser() user: JwtPayload) {
-    return this.service.addCriterion(id, dto, user.sub);
+  addCriterion(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateCriterionDto, @CurrentUser() user: SafeUser) {
+    return this.service.addCriterion(id, dto, user.id);
   }
 
   @Patch(':id/criteria/:criterionId')
@@ -143,9 +143,9 @@ export class DecisionsController {
     @Param('id', ParseIntPipe) id: number,
     @Param('criterionId', ParseIntPipe) criterionId: number,
     @Body() dto: UpdateCriterionDto,
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: SafeUser,
   ) {
-    return this.service.updateCriterion(id, criterionId, dto, user.sub);
+    return this.service.updateCriterion(id, criterionId, dto, user.id);
   }
 
   @Delete(':id/criteria/:criterionId')
@@ -155,9 +155,9 @@ export class DecisionsController {
   removeCriterion(
     @Param('id', ParseIntPipe) id: number,
     @Param('criterionId', ParseIntPipe) criterionId: number,
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: SafeUser,
   ) {
-    return this.service.removeCriterion(id, criterionId, user.sub);
+    return this.service.removeCriterion(id, criterionId, user.id);
   }
 
   // ------------------------------------------------------------------- scores
@@ -166,7 +166,20 @@ export class DecisionsController {
   @Authenticated()
   @ApiOperation({ summary: 'Create or update the score of one option on one criterion (owner only)' })
   @errors(400, 401, 403, 404, 409)
-  upsertScore(@Param('id', ParseIntPipe) id: number, @Body() dto: UpsertScoreDto, @CurrentUser() user: JwtPayload) {
-    return this.service.upsertScore(id, dto, user.sub);
+  upsertScore(@Param('id', ParseIntPipe) id: number, @Body() dto: UpsertScoreDto, @CurrentUser() user: SafeUser) {
+    return this.service.upsertScore(id, dto, user.id);
+  }
+
+  @Delete(':id/scores/:optionId/:criterionId')
+  @Authenticated()
+  @ApiOperation({ summary: 'Remove a score from one option and criterion pair (owner only)' })
+  @errors(401, 403, 404, 409)
+  removeScore(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('optionId', ParseIntPipe) optionId: number,
+    @Param('criterionId', ParseIntPipe) criterionId: number,
+    @CurrentUser() user: SafeUser,
+  ) {
+    return this.service.removeScore(id, optionId, criterionId, user.id);
   }
 }

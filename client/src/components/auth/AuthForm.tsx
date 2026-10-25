@@ -20,8 +20,12 @@ const emptyValues = { name: '', email: '', password: '' }
 
 function AuthForm({ mode }: AuthFormProps) {
   const location = useLocation()
+  const requestedReturnTo = location.state?.returnTo
   const returnTo =
-    location.state?.returnTo === '/decisions/new' ? '/decisions/new' : undefined
+    typeof requestedReturnTo === 'string' &&
+    /^\/decisions\/new(?:\?templateId=\d+)?$/.test(requestedReturnTo)
+      ? requestedReturnTo
+      : undefined
   const isRegister = mode === 'register'
   const headingId = useId()
   const formRef = useRef<HTMLFormElement>(null)

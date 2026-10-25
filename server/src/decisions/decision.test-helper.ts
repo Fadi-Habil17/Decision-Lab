@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { vi } from 'vitest';
+
 // Test-only helpers: an in-memory stand-in for the Mongoose Decision model (no MongoDB needed).
 export type Plain = Record<string, any>;
 
@@ -18,7 +20,7 @@ export function makeDoc(data: Plain): Plain {
     winnerNames: [],
     ...clone(data),
   };
-  doc.save = jest.fn(async () => doc);
+  doc.save = vi.fn(async () => doc);
   doc.toJSON = () =>
     clone(Object.fromEntries(Object.entries(doc).filter(([k]) => k !== 'save' && k !== 'toJSON')));
   return doc;
@@ -59,13 +61,13 @@ export const draft = (over: Plain = {}): Plain => ({
 export function createFakeModel(seed: Plain[] = []) {
   const docs: Plain[] = seed.map(makeDoc);
   const model = {
-    findOne: jest.fn(async (f: { id: number }) => docs.find((d) => d.id === f.id) ?? null),
-    create: jest.fn(async (data: Plain) => {
+    findOne: vi.fn(async (f: { id: number }) => docs.find((d) => d.id === f.id) ?? null),
+    create: vi.fn(async (data: Plain) => {
       const d = makeDoc(data);
       docs.push(d);
       return d;
     }),
-    find: jest.fn((filter: Plain = {}) => ({
+    find: vi.fn((filter: Plain = {}) => ({
       sort: async () =>
         docs.filter((d) => {
           if (filter.status && d.status !== filter.status) return false;
@@ -73,7 +75,7 @@ export function createFakeModel(seed: Plain[] = []) {
           return true;
         }),
     })),
-    deleteOne: jest.fn(async (f: { id: number }) => {
+    deleteOne: vi.fn(async (f: { id: number }) => {
       const i = docs.findIndex((d) => d.id === f.id);
       if (i >= 0) docs.splice(i, 1);
       return { deletedCount: i >= 0 ? 1 : 0 };

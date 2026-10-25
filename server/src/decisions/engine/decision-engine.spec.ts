@@ -1,4 +1,4 @@
-import { rankOptions, validateForCalculation, EngineInput } from './decision-engine';
+import { rankOptions, validateForCalculation, EngineInput } from './decision-engine.js';
 
 const criteria = [
   { id: 1, name: 'Performance', weight: 60 },

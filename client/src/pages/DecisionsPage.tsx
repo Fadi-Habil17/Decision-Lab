@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Button from '../components/ui/Button'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
@@ -7,7 +7,11 @@ import ErrorState from '../components/ui/ErrorState'
 import LoadingState from '../components/ui/LoadingState'
 import StatusBadge from '../components/ui/StatusBadge'
 import TextInput from '../components/ui/TextInput'
-import { useLocalDecisions } from '../decisions/store'
+import {
+  decisionApi,
+  type DecisionSummary,
+  DecisionApiError as ApiError,
+} from '../decisions/api'
 import { useDemoSession } from '../demo/session'
 import type { DecisionStatus } from '../types'
 import '../styles/decisions.css'
@@ -17,23 +21,55 @@ const dateFormat = new Intl.DateTimeFormat('en', {
   timeZone: 'UTC',
 })
 
+type ListState =
+  | { kind: 'loading' }
+  | { kind: 'ready'; items: DecisionSummary[] }
+  | { kind: 'error'; message: string }
+
+const emptyDecisions: DecisionSummary[] = []
+
 function DecisionsPage() {
   const { user } = useDemoSession()
-  const { items, scenario, remove, retry } = useLocalDecisions()
+  const [state, setState] = useState<ListState>({ kind: 'loading' })
+  const [attempt, setAttempt] = useState(0)
   const [title, setTitle] = useState('')
   const [status, setStatus] = useState<DecisionStatus | 'All'>('All')
-  const [pendingId, setPendingId] = useState<number | null>(null)
+  const [pending, setPending] = useState<DecisionSummary | null>(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
   const [message, setMessage] = useState('')
   const headingRef = useRef<HTMLHeadingElement>(null)
-  const available = scenario === 'empty' ? [] : items
+
+  useEffect(() => {
+    const controller = new AbortController()
+    decisionApi
+      .getDecisions(controller.signal)
+      .then((items) => {
+        if (!controller.signal.aborted) setState({ kind: 'ready', items })
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          setState({
+            kind: 'error',
+            message:
+              error instanceof Error
+                ? error.message
+                : 'Decisions could not be loaded.',
+          })
+        }
+      })
+    return () => controller.abort()
+  }, [attempt])
+
+  const items = state.kind === 'ready' ? state.items : emptyDecisions
   const query = title.trim().toLowerCase()
-  const filtered = available.filter(
-    (item) =>
-      item.title.toLowerCase().includes(query) &&
-      (status === 'All' || item.status === status),
-  )
-  const pending = items.find(
-    (item) => item.id === pendingId && item.ownerId === user?.id,
+  const filtered = useMemo(
+    () =>
+      items.filter(
+        (item) =>
+          item.title.toLowerCase().includes(query) &&
+          (status === 'All' || item.status === status),
+      ),
+    [items, query, status],
   )
   const createLink = (
     <Link
@@ -44,9 +80,40 @@ function DecisionsPage() {
       Create New Decision
     </Link>
   )
+
   function clearFilters() {
     setTitle('')
     setStatus('All')
+  }
+
+  async function deleteDecision() {
+    if (!pending || !user || pending.ownerId !== user.id) return
+    setDeleteBusy(true)
+    setMessage('')
+    try {
+      await decisionApi.deleteDecision(pending.id)
+      setState((current) =>
+        current.kind === 'ready'
+          ? {
+              kind: 'ready',
+              items: current.items.filter((item) => item.id !== pending.id),
+            }
+          : current,
+      )
+      setMessage(`Deleted “${pending.title}”.`)
+      setPending(null)
+      window.requestAnimationFrame(() => headingRef.current?.focus())
+    } catch (error) {
+      setMessage(
+        error instanceof ApiError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : 'The decision could not be deleted.',
+      )
+    } finally {
+      setDeleteBusy(false)
+    }
   }
 
   return (
@@ -63,9 +130,6 @@ function DecisionsPage() {
         </div>
         {createLink}
       </div>
-      <p className="decisions-preview-note">
-        Demo decisions · Changes last until you refresh this page.
-      </p>
       <div
         className="decision-filters"
         role="search"
@@ -108,14 +172,17 @@ function DecisionsPage() {
       <p className="decision-announcement" role="status">
         {message}
       </p>
-      {scenario === 'loading' ? (
+      {state.kind === 'loading' ? (
         <LoadingState message="Loading decisions…" />
-      ) : scenario === 'error' ? (
+      ) : state.kind === 'error' ? (
         <ErrorState
-          message="We couldn't load the decisions. Please try again."
-          onRetry={retry}
+          message={state.message}
+          onRetry={() => {
+            setState({ kind: 'loading' })
+            setAttempt((current) => current + 1)
+          }}
         />
-      ) : available.length === 0 ? (
+      ) : items.length === 0 ? (
         <EmptyState
           title="No decisions yet"
           description="Start a decision to give your next choice some clarity."
@@ -124,7 +191,7 @@ function DecisionsPage() {
       ) : filtered.length === 0 ? (
         <EmptyState
           title="No matching decisions"
-          description="Try another title or status to find what you're looking for."
+          description="Try another title or status to find what you’re looking for."
           action={
             <Button variant="secondary" onClick={clearFilters}>
               Reset search and filters
@@ -137,76 +204,79 @@ function DecisionsPage() {
             {filtered.length} {filtered.length === 1 ? 'decision' : 'decisions'}
           </p>
           <ul className="decision-grid">
-            {filtered.map((item) => (
-              <li key={item.id}>
-                <article
-                  className="decision-card"
-                  aria-labelledby={`decision-${item.id}`}
-                >
-                  <div className="decision-card-top">
-                    <StatusBadge status={item.status} />
-                    <span className="decision-ownership">
-                      {user?.id === item.ownerId
-                        ? 'Your decision'
-                        : 'View only'}
-                    </span>
-                  </div>
-                  <h2 id={`decision-${item.id}`}>
-                    <Link to={`/decisions/${item.id}`}>{item.title}</Link>
-                  </h2>
-                  <p className="decision-updated">
-                    Updated{' '}
-                    <time dateTime={item.updatedAt}>
-                      {dateFormat.format(new Date(item.updatedAt))}
-                    </time>
-                  </p>
-                  {item.status === 'Finalized' &&
-                    item.winnerNames.length > 0 && (
-                      <p className="decision-winners">
-                        <strong>
-                          {item.winnerNames.length > 1 ? 'Winners' : 'Winner'}:
-                        </strong>{' '}
-                        {item.winnerNames.join(', ')}
-                      </p>
-                    )}
-                  <div className="decision-card-actions">
-                    <Link
-                      className="button button--secondary"
-                      to={`/decisions/${item.id}`}
-                    >
-                      View decision
-                    </Link>
-                    {user?.id === item.ownerId && (
-                      <Button
-                        variant="ghost"
-                        aria-label={`Delete ${item.title}`}
-                        onClick={() => {
-                          setMessage('')
-                          setPendingId(item.id)
-                        }}
+            {filtered.map((item) => {
+              const owner = Boolean(
+                user && item.ownerId !== undefined && item.ownerId === user.id,
+              )
+              return (
+                <li key={item.id}>
+                  <article
+                    className="decision-card"
+                    aria-labelledby={`decision-${item.id}`}
+                  >
+                    <div className="decision-card-top">
+                      <StatusBadge status={item.status} />
+                      <span className="decision-ownership">
+                        {owner
+                          ? 'Your decision'
+                          : item.ownerName
+                            ? `View only · ${item.ownerName}`
+                            : 'View only'}
+                      </span>
+                    </div>
+                    <h2 id={`decision-${item.id}`}>
+                      <Link to={`/decisions/${item.id}`}>{item.title}</Link>
+                    </h2>
+                    <p className="decision-updated">
+                      Updated{' '}
+                      <time dateTime={item.updatedAt}>
+                        {dateFormat.format(new Date(item.updatedAt))}
+                      </time>
+                    </p>
+                    {item.status === 'Finalized' &&
+                      item.winnerNames.length > 0 && (
+                        <p className="decision-winners">
+                          <strong>
+                            {item.winnerNames.length > 1 ? 'Winners' : 'Winner'}:
+                          </strong>{' '}
+                          {item.winnerNames.join(', ')}
+                        </p>
+                      )}
+                    <div className="decision-card-actions">
+                      <Link
+                        className="button button--secondary"
+                        to={`/decisions/${item.id}`}
                       >
-                        Delete
-                      </Button>
-                    )}
-                  </div>
-                </article>
-              </li>
-            ))}
+                        View decision
+                      </Link>
+                      {owner && (
+                        <Button
+                          variant="ghost"
+                          aria-label={`Delete ${item.title}`}
+                          onClick={() => {
+                            setMessage('')
+                            setPending(item)
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      )}
+                    </div>
+                  </article>
+                </li>
+              )
+            })}
           </ul>
         </>
       )}
       <ConfirmDialog
         open={Boolean(pending)}
         title="Delete this decision?"
-        description={`“${pending?.title ?? ''}” will be removed from this demo list until the page is refreshed.`}
+        description={`“${pending?.title ?? ''}” will be permanently removed.`}
         confirmLabel="Delete decision"
-        onCancel={() => setPendingId(null)}
-        onConfirm={() => {
-          if (pending && remove(pending.id, user?.id ?? null))
-            setMessage(`Deleted “${pending.title}”.`)
-          setPendingId(null)
-          window.requestAnimationFrame(() => headingRef.current?.focus())
-        }}
+        busy={deleteBusy}
+        onCancel={() => setPending(null)}
+        onConfirm={() => void deleteDecision()}
       />
     </section>
   )

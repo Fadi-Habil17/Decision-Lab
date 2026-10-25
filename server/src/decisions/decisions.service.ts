@@ -7,10 +7,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, FilterQuery } from 'mongoose';
-import { CountersService } from '../common/counters/counters.service';
-import { CriterionItem } from '../common/schemas/criterion.schema';
-import { TemplatesService } from '../templates/templates.service';
+import { Model } from 'mongoose';
+import { CountersService } from '../common/counters/counters.service.js';
+import { CriterionItem } from '../common/schemas/criterion.schema.js';
+import { TemplatesService } from '../templates/templates.service.js';
 import {
   CreateCriterionDto,
   CreateDecisionDto,
@@ -20,9 +20,11 @@ import {
   UpdateDecisionDto,
   UpdateOptionDto,
   UpsertScoreDto,
-} from './dto/decision.dto';
-import { MAX_ITEMS, sumWeights } from './engine/decision-engine';
-import { Decision, DecisionDocument, OptionItem, ScoreItem } from './schemas/decision.schema';
+} from './dto/decision.dto.js';
+import { MAX_ITEMS, sumWeights } from './engine/decision-engine.js';
+import { Decision, DecisionDocument } from './schemas/decision.schema.js';
+import { OptionItem } from './schemas/option.schema.js';
+import { ScoreItem } from './schemas/score.schema.js';
 
 export type DecisionView = Decision & { weightTotal: number; weightDifference: number };
 
@@ -114,7 +116,7 @@ export class DecisionsService {
   // ---------------------------------------------------------------- decisions
 
   async findAll(query: ListDecisionsQueryDto): Promise<DecisionView[]> {
-    const filter: FilterQuery<Decision> = {};
+    const filter: { status?: Decision['status']; title?: { $regex: string; $options: 'i' } } = {};
     if (query.status) filter.status = query.status;
     if (query.title) filter.title = { $regex: escapeRegex(query.title), $options: 'i' };
     // status + title are combined with AND. Sort matches the { status: 1, updatedAt: -1 } index
@@ -262,5 +264,16 @@ export class DecisionsService {
     return this.persist(doc);
   }
 
+  async removeScore(id: number, optionId: number, criterionId: number, userId: number): Promise<DecisionView> {
+    const doc = await this.loadForEdit(id, userId);
+    const scores = this.scores(doc);
+    if (!scores.some((score) => score.optionId === optionId && score.criterionId === criterionId)) {
+      throw new NotFoundException(`Score for option ${optionId} and criterion ${criterionId} not found in decision ${id}`);
+    }
+    doc.scores = scores.filter(
+      (score) => score.optionId !== optionId || score.criterionId !== criterionId,
+    );
+    return this.persist(doc);
+  }
 
 }

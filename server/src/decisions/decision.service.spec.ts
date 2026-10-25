@@ -1,14 +1,15 @@
 import { BadRequestException, ConflictException, ForbiddenException, Logger, NotFoundException } from '@nestjs/common';
-import { DecisionsService, NOT_OWNER_MESSAGE } from './decisions.service';
-import { OTHER, OWNER, Plain, TEMPLATE, createFakeModel, draft } from './decisions.test-helpers';
+import { vi } from 'vitest';
+import { DecisionsService, NOT_OWNER_MESSAGE } from './decisions.service.js';
+import { OTHER, OWNER, Plain, TEMPLATE, createFakeModel, draft } from './decision.test-helper.js';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function build(seed: Plain[] = []) {
   const { docs, model } = createFakeModel(seed);
   let counter = 100;
-  const counters = { next: jest.fn(async () => ++counter) };
+  const counters = { next: vi.fn(async () => ++counter) };
   const templates = {
-    findOne: jest.fn(async (id: number) => {
+    findOne: vi.fn(async (id: number) => {
       if (id !== TEMPLATE.id) throw new NotFoundException(`Template ${id} not found`);
       return TEMPLATE;
     }),
@@ -18,11 +19,11 @@ function build(seed: Plain[] = []) {
 }
 
 describe('DecisionsService', () => {
-  let logSpy: jest.SpyInstance;
+  let logSpy: { mockRestore: () => void };
   beforeEach(() => {
-    logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    logSpy = vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => vi.restoreAllMocks());
 
   // ------------------------------------------------------------------ create
   describe('create', () => {
@@ -294,6 +295,14 @@ describe('DecisionsService', () => {
       expect(res.scores.find((s) => s.optionId === 1 && s.criterionId === 1)?.score).toBe(10);
     });
 
+    it('removes a score and rejects an unknown score pair', async () => {
+      const { service } = build([draft()]);
+      const res = await service.removeScore(1, 1, 1, OWNER);
+      expect(res.scores).toHaveLength(3);
+      expect(res.scores.some((score) => score.optionId === 1 && score.criterionId === 1)).toBe(false);
+      await expect(service.removeScore(1, 1, 1, OWNER)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
     it('400s for an option or criterion that is not part of this decision', async () => {
       const { service } = build([draft()]);
       await expect(service.upsertScore(1, { optionId: 99, criterionId: 1, score: 5 }, OWNER)).rejects.toBeInstanceOf(BadRequestException);
@@ -320,6 +329,7 @@ describe('DecisionsService', () => {
       ['updateCriterion', (s) => s.updateCriterion(1, 1, { weight: 5 }, OTHER)],
       ['removeCriterion', (s) => s.removeCriterion(1, 1, OTHER)],
       ['upsertScore', (s) => s.upsertScore(1, { optionId: 1, criterionId: 1, score: 1 }, OTHER)],
+      ['removeScore', (s) => s.removeScore(1, 1, 1, OTHER)],
     ];
 
     it.each(mutations)('%s: a non-owner gets 403 with the exact message and nothing changes', async (_name, call) => {

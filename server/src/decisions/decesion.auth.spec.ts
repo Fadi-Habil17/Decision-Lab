@@ -2,13 +2,14 @@ import { INestApplication, NotFoundException, ValidationPipe } from '@nestjs/com
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { getModelToken } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
-import { CountersService } from '../common/counters/counters.service';
+import { CountersService } from '../common/counters/counters.service.js';
 import { AllExceptionsFilter } from '../common/filters/all-exceptions.filter';
-import { TemplatesService } from '../templates/templates.service';
-import { DecisionsController } from './decisions.controller';
-import { DecisionsService } from './decisions.service';
-import { OTHER, OWNER, createFakeModel, draft } from './decisions.test-helpers';
-import { Decision } from './schemas/decision.schema';
+import { TemplatesService } from '../templates/templates.service.js';
+import { UsersService } from '../users/users.service.js';
+import { DecisionsController } from './decisions.controller.js';
+import { DecisionsService } from './decisions.service.js';
+import { OTHER, OWNER, createFakeModel, draft } from './decision.test-helper.js';
+import { Decision } from './schemas/decision.schema.js';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
@@ -48,6 +49,16 @@ beforeAll(async () => {
       { provide: getModelToken(Decision.name), useValue: model },
       { provide: CountersService, useValue: { next: async () => ++counter } },
       { provide: TemplatesService, useValue: { findOne: async () => { throw new NotFoundException('Template not found'); } } },
+      {
+        provide: UsersService,
+        useValue: {
+          findById: async (id: number) =>
+            id === OWNER || id === OTHER
+              ? { id, email: `user${id}@test.dev`, name: `User ${id}`, role: 'User' }
+              : null,
+          toSafeUser: (user: unknown) => user,
+        },
+      },
     ],
   }).compile();
 
@@ -104,6 +115,7 @@ describe('authentication: unauthenticated mutations are 401', () => {
     ['PATCH', '/decisions/1/criteria/1', { weight: 5 }],
     ['DELETE', '/decisions/1/criteria/1'],
     ['PUT', '/decisions/1/scores', { optionId: 1, criterionId: 1, score: 5 }],
+    ['DELETE', '/decisions/1/scores/1/1'],
   ];
 
   it.each(routes)('%s %s without a token -> 401', async (method, path, body) => {
@@ -159,6 +171,7 @@ describe('authorization: owner-only mutations', () => {
     ['PATCH', '/decisions/1/criteria/1', { weight: 5 }],
     ['DELETE', '/decisions/1/criteria/1'],
     ['PUT', '/decisions/1/scores', { optionId: 1, criterionId: 1, score: 1 }],
+    ['DELETE', '/decisions/1/scores/1/1'],
   ];
 
   it.each(forbidden)('%s %s by a non-owner -> 403 with the exact message', async (method, path, body) => {

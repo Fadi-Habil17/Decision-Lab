@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 
 /** Safe trim: only touches strings, so non-strings still fail the @IsString checks. */
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
@@ -85,8 +85,23 @@ export class CreateCriterionDto {
   weight: number;
 }
 
-/** PATCH body: rename and/or change the weight. */
-export class UpdateCriterionDto extends PartialType(CreateCriterionDto) {}
+/** PATCH body: rename and/or change the weight. Null is invalid; omission is allowed. */
+export class UpdateCriterionDto {
+  @ApiPropertyOptional({ example: 'Performance', maxLength: 100 })
+  @ValidateIf((_, value) => value !== undefined)
+  @Transform(trim)
+  @IsString({ message: 'name must be a string' })
+  @IsNotEmpty({ message: 'name cannot be blank' })
+  @MaxLength(100, { message: 'name cannot be longer than 100 characters' })
+  name?: string;
+
+  @ApiPropertyOptional({ example: 30, minimum: 1, maximum: 100 })
+  @ValidateIf((_, value) => value !== undefined)
+  @IsInt({ message: 'weight must be a whole number' })
+  @Min(1, { message: 'weight must be at least 1' })
+  @Max(100, { message: 'weight cannot be more than 100' })
+  weight?: number;
+}
 
 // ------------------------------------------------------------------- scores
 
