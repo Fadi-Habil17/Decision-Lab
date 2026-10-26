@@ -1,10 +1,10 @@
 import { Link, NavLink } from 'react-router-dom'
 import Button from '../components/ui/Button'
 import BrandLogo from '../components/ui/BrandLogo'
-import { useDemoSession } from '../demo/session'
+import { useAuth } from '../auth/session'
 
 function Navbar() {
-  const { user, logout } = useDemoSession()
+  const { user, logout } = useAuth()
 
   return (
     <header className="app-header">
@@ -51,7 +51,6 @@ function Navbar() {
             <div className="account-session">
               <div className="account-profile">
                 <span className="account-name">{user.name}</span>
-                <span className="demo-badge">Demo</span>
               </div>
               <Button variant="secondary" onClick={logout}>
                 Logout

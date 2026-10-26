@@ -12,7 +12,7 @@ import {
   type DecisionSummary,
   DecisionApiError as ApiError,
 } from '../decisions/api'
-import { useDemoSession } from '../demo/session'
+import { useAuth } from '../auth/session'
 import type { DecisionStatus } from '../types'
 import '../styles/decisions.css'
 
@@ -29,7 +29,7 @@ type ListState =
 const emptyDecisions: DecisionSummary[] = []
 
 function DecisionsPage() {
-  const { user } = useDemoSession()
+  const { user } = useAuth()
   const [state, setState] = useState<ListState>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const [title, setTitle] = useState('')

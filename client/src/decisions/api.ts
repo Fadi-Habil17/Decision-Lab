@@ -105,10 +105,15 @@ interface ApiErrorPayload {
   missingScores?: MissingScorePair[]
 }
 
-const apiBaseUrl = (
-  import.meta.env.VITE_API_BASE_URL ?? '/api'
-).replace(/\/$/, '')
+export const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(
+  /\/$/,
+  '',
+)
 let accessToken: string | null = null
+let unauthorized: (() => void) | null = null
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  unauthorized = handler
+}
 
 export function setDecisionApiAccessToken(token: string | null) {
   accessToken = token
@@ -140,9 +145,12 @@ function readApiErrorPayload(value: unknown): ApiErrorPayload | undefined {
 }
 
 function messageFor(status: number, payload?: ApiErrorPayload): string {
-  if (status === 401) return 'Your session is missing or expired. Sign in and try again.'
-  if (status === 403) return 'You do not have permission to change this decision.'
-  if (status === 404) return 'The requested API route or decision was not found.'
+  if (status === 401)
+    return 'Your session is missing or expired. Sign in and try again.'
+  if (status === 403)
+    return 'You do not have permission to change this decision.'
+  if (status === 404)
+    return 'The requested API route or decision was not found.'
   if (typeof payload?.message === 'string') return payload.message
   if (Array.isArray(payload?.message)) return payload.message.join(' ')
   return `The request failed with status ${status}. Please try again.`
@@ -172,6 +180,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
   if (init.body !== undefined) headers.set('Content-Type', 'application/json')
 
+  const requestToken = accessToken
   let response: Response
   try {
     response = await fetch(`${apiBaseUrl}${path}`, { ...init, headers })
@@ -196,6 +205,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
 
   if (!response.ok) {
+    if (response.status === 401 && requestToken === accessToken)
+      unauthorized?.()
     const payload = readApiErrorPayload(body)
     throw new DecisionApiError(
       response.status,
