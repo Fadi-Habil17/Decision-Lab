@@ -1,10 +1,9 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { simulateAuthPreview } from '../../demo/authPreview'
-import { useDemoSession } from '../../demo/session'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { authRequest, safeReturnTo } from '../../auth/api'
+import { useAuth } from '../../auth/session'
 import Button from '../ui/Button'
 import TextInput from '../ui/TextInput'
-import BrandLogo from '../ui/BrandLogo'
 import AuthArtwork from './AuthArtwork'
 import AuthIcon from './AuthIcon'
 import '../../styles/auth.css'
@@ -20,17 +19,14 @@ const emptyValues = { name: '', email: '', password: '' }
 
 function AuthForm({ mode }: AuthFormProps) {
   const location = useLocation()
-  const requestedReturnTo = location.state?.returnTo
-  const returnTo =
-    typeof requestedReturnTo === 'string' &&
-    /^\/decisions\/new(?:\?templateId=\d+)?$/.test(requestedReturnTo)
-      ? requestedReturnTo
-      : undefined
+  const returnTo = safeReturnTo(location.state?.returnTo)
+  const navigate = useNavigate()
   const isRegister = mode === 'register'
   const headingId = useId()
   const formRef = useRef<HTMLFormElement>(null)
   const pendingRequest = useRef<AbortController | null>(null)
-  const { formScenario } = useDemoSession()
+  const { login } = useAuth()
+  const [generalError, setGeneralError] = useState('')
   const [values, setValues] = useState(emptyValues)
   const [errors, setErrors] = useState<FieldErrors>({})
   const [busy, setBusy] = useState(false)
@@ -68,6 +64,22 @@ function AuthForm({ mode }: AuthFormProps) {
       nextErrors.email = 'Enter a valid email address.'
     }
 
+    if (
+      isRegister &&
+      values.name.trim() &&
+      (values.name.trim().length < 2 || values.name.trim().length > 100)
+    )
+      nextErrors.name = 'Use 2–100 characters for your name.'
+    if (values.email.trim().length > 254)
+      nextErrors.email = 'Email must be at most 254 characters.'
+    if (
+      values.password &&
+      (values.password.length > 72 ||
+        (isRegister && values.password.length < 8))
+    )
+      nextErrors.password = isRegister
+        ? 'Use 8–72 characters for your password.'
+        : 'Use at most 72 characters.'
     if (!values.password) {
       nextErrors.password = 'Enter your password.'
     }
@@ -90,11 +102,37 @@ function AuthForm({ mode }: AuthFormProps) {
     setBusy(true)
 
     try {
-      // Form values are never passed to the simulation or used as credentials.
-      await simulateAuthPreview(formScenario, controller.signal)
-      if (!controller.signal.aborted) setFeedback('success')
-    } catch {
-      if (!controller.signal.aborted) setFeedback('error')
+      if (isRegister) {
+        await authRequest(
+          'register',
+          {
+            name: values.name.trim(),
+            email: values.email.trim(),
+            password: values.password,
+          },
+          undefined,
+          controller.signal,
+        )
+        if (!controller.signal.aborted)
+          navigate('/login', {
+            replace: true,
+            state: { returnTo, registered: true },
+          })
+      } else {
+        await login(values.email.trim(), values.password, controller.signal)
+        if (!controller.signal.aborted) navigate(returnTo, { replace: true })
+      }
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        setGeneralError(
+          error instanceof TypeError
+            ? 'Could not reach the server. Check your connection and retry.'
+            : error instanceof Error
+              ? error.message
+              : 'Please try again.',
+        )
+        setFeedback('error')
+      }
     } finally {
       if (!controller.signal.aborted) {
         setValues((previous) => ({ ...previous, password: '' }))
@@ -122,6 +160,12 @@ function AuthForm({ mode }: AuthFormProps) {
           </p>
         </div>
 
+        {!isRegister && location.state?.registered && (
+          <p role="status">Account created. Please log in.</p>
+        )}
+        {!isRegister && location.state?.sessionExpired && (
+          <p role="status">Your session expired. Please log in again.</p>
+        )}
         <form
           aria-busy={busy}
           aria-labelledby={headingId}
@@ -199,8 +243,7 @@ function AuthForm({ mode }: AuthFormProps) {
 
           {feedback === 'error' ? (
             <p className="auth-feedback auth-feedback--error" role="alert">
-              This preview could not be completed. No account changes were made.
-              Enter your password again and retry.
+              {generalError}
             </p>
           ) : null}
           <p
@@ -208,11 +251,7 @@ function AuthForm({ mode }: AuthFormProps) {
             className={`auth-feedback${feedback === 'success' ? ' auth-feedback--success' : ''}`}
             role="status"
           >
-            {busy
-              ? 'Running the preview. Please wait…'
-              : feedback === 'success'
-                ? 'Preview complete. No account was created and no sign-in occurred.'
-                : ''}
+            {busy ? 'Please wait…' : feedback === 'success' ? 'Completed.' : ''}
           </p>
 
           <Button disabled={busy} fullWidth type="submit">
@@ -234,10 +273,6 @@ function AuthForm({ mode }: AuthFormProps) {
           >
             {isRegister ? 'Log in' : 'Create an account'}
           </Link>
-        </p>
-        <p className="auth-preview-note">
-          Preview only. No account will be created and you will not be signed
-          in.
         </p>
       </div>
 
@@ -288,7 +323,6 @@ function AuthForm({ mode }: AuthFormProps) {
           </g>
         </svg>
         <div className="auth-intro-content">
-          <BrandLogo />
           <h2 className="auth-intro-title">
             {isRegister
               ? 'Better questions lead to better decisions.'

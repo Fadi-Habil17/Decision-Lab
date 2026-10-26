@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import LoadingState from './components/ui/LoadingState'
-import { useDemoSession } from './demo/session'
+import { useAuth } from './auth/session'
 import AppShell from './layout/AppShell'
 import DecisionResultsPage from './pages/DecisionResultsPage'
 import DecisionWorkspacePage from './pages/DecisionWorkspacePage'
@@ -21,7 +21,7 @@ const DecisionsPreviewPage = import.meta.env.DEV
   : null
 
 function App() {
-  const { user } = useDemoSession()
+  const { user, loading, restoreError, retry } = useAuth()
   const location = useLocation()
   return (
     <AppShell>
@@ -57,7 +57,14 @@ function App() {
         <Route
           path="/decisions/new"
           element={
-            user ? (
+            loading ? (
+              <LoadingState message="Restoring your session…" />
+            ) : restoreError ? (
+              <div role="alert">
+                {restoreError}
+                <button onClick={retry}>Retry</button>
+              </div>
+            ) : user ? (
               <NewDecisionPage />
             ) : (
               <Navigate

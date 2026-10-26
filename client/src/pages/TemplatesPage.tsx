@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import ErrorState from '../components/ui/ErrorState'
 import LoadingState from '../components/ui/LoadingState'
 import { decisionApi, type DecisionTemplate } from '../decisions/api'
-import { useDemoSession } from '../demo/session'
+import { useAuth } from '../auth/session'
 import '../styles/templates.css'
 
 type TemplateState =
@@ -12,7 +12,7 @@ type TemplateState =
   | { kind: 'error'; message: string }
 
 function TemplatesPage() {
-  const { user } = useDemoSession()
+  const { user } = useAuth()
   const [state, setState] = useState<TemplateState>({ kind: 'loading' })
 
   useEffect(() => {
