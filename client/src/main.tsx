@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
+import AuthProvider from './auth/AuthContext'
 import DemoSessionProvider from './demo/DemoSessionProvider'
 import DecisionStoreProvider from './decisions/DecisionStoreProvider'
 import './index.css'
@@ -18,7 +19,9 @@ createRoot(rootElement).render(
     <BrowserRouter>
       <DemoSessionProvider>
         <DecisionStoreProvider>
-          <App />
+          <AuthProvider>
+            <App />
+          </AuthProvider>
         </DecisionStoreProvider>
       </DemoSessionProvider>
     </BrowserRouter>
