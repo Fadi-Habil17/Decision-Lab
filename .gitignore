@@ -24,3 +24,20 @@ npm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Local coaching notes and agent/design tooling
+/docs/
+/.agents/
+/.codex/
+/.design-rules/
+/skills-lock.json
+
+# Generated caches and test artifacts
+*.tsbuildinfo
+.cache/
+.vite/
+.vitest/
+test-results/
+playwright-report/
+*.pid
+*.pid.lock

@@ -1,7 +1,7 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CounterService } from '../common/database/counter.service.js';
+import { CountersService } from '../common/counters/counters.service.js';
 import { User, type UserDocument, type UserRole } from './schemas/user.schema.js';
 
 export interface SafeUser {
@@ -15,7 +15,7 @@ export interface SafeUser {
 export class UsersService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    private readonly counters: CounterService,
+    private readonly counters: CountersService,
   ) {}
 
   toSafeUser(user: Pick<User, 'id' | 'email' | 'name' | 'role'>): SafeUser {
@@ -27,7 +27,7 @@ export class UsersService {
     if (await this.userModel.exists({ email })) {
       throw new ConflictException('An account with this email already exists');
     }
-    const id = await this.counters.next('user');
+    const id = await this.counters.next('users');
     try {
       const user = await this.userModel.create({
         id,
