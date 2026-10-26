@@ -4,7 +4,6 @@ import { authRequest, safeReturnTo } from '../../auth/api'
 import { useAuth } from '../../auth/session'
 import Button from '../ui/Button'
 import TextInput from '../ui/TextInput'
-import BrandLogo from '../ui/BrandLogo'
 import AuthArtwork from './AuthArtwork'
 import AuthIcon from './AuthIcon'
 import '../../styles/auth.css'
@@ -324,7 +323,6 @@ function AuthForm({ mode }: AuthFormProps) {
           </g>
         </svg>
         <div className="auth-intro-content">
-          <BrandLogo />
           <h2 className="auth-intro-title">
             {isRegister
               ? 'Better questions lead to better decisions.'
