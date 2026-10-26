@@ -1,0 +1,43 @@
+[
+  {
+    "title": "Which gym should I join?",
+    "description": "Compare Golds Gym (large but busy), Fitness Gym (good time availability but small), and STAR Gym (a good private coach but an older facility). Ratings are illustrative personal judgments for this training project, not verified claims about prices, opening hours, or facility conditions. Additional cost and maintenance ratings are assumptions to revise after visiting.",
+    "options": [
+      { "id": 1, "name": "Golds Gym" },
+      { "id": 2, "name": "Fitness Gym" },
+      { "id": 3, "name": "STAR Gym" }
+    ],
+    "criteria": [
+      { "id": 1, "name": "Equipment variety and training space", "weight": 20 },
+      { "id": 2, "name": "Low crowding and equipment access", "weight": 20 },
+      { "id": 3, "name": "Schedule and time availability", "weight": 20 },
+      { "id": 4, "name": "Private coaching quality", "weight": 15 },
+      { "id": 5, "name": "Membership affordability", "weight": 15 },
+      { "id": 6, "name": "Cleanliness and equipment maintenance", "weight": 10 }
+    ],
+    "ratings": [
+      [9, 3, 6, 6, 5, 8],
+      [5, 6, 9, 6, 8, 8],
+      [6, 7, 6, 9, 7, 4]
+    ]
+  },
+  {
+    "title": "Buy an electric guitar or keep my classical guitar?",
+    "description": "I love metal music, but an electric guitar costs more, requires new techniques, and may disturb neighbours. These are illustrative personal ratings, not product or financial advice. The electric option assumes headphone-capable practice equipment; its affordability score includes the guitar and necessary accessories. Every criterion rewards a more desirable outcome, so higher affordability means lower cost and higher neighbour-friendliness means less disturbance.",
+    "options": [
+      { "id": 1, "name": "Buy an electric guitar" },
+      { "id": 2, "name": "Keep the classical guitar" }
+    ],
+    "criteria": [
+      { "id": 1, "name": "Fit for metal music", "weight": 30 },
+      { "id": 2, "name": "Affordability including accessories", "weight": 25 },
+      { "id": 3, "name": "Ease with current playing skills", "weight": 15 },
+      { "id": 4, "name": "Neighbour-friendly practice", "weight": 15 },
+      { "id": 5, "name": "Long-term motivation to practise", "weight": 15 }
+    ],
+    "ratings": [
+      [10, 3, 4, 8, 9],
+      [3, 10, 9, 7, 6]
+    ]
+  }
+]

@@ -1,14 +1,16 @@
 import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import LoadingState from './components/ui/LoadingState'
 import { useDemoSession } from './demo/session'
 import AppShell from './layout/AppShell'
+import DecisionResultsPage from './pages/DecisionResultsPage'
+import DecisionWorkspacePage from './pages/DecisionWorkspacePage'
 import DecisionsPage from './pages/DecisionsPage'
 import LoginPage from './pages/LoginPage'
 import NewDecisionPage from './pages/NewDecisionPage'
 import NotFoundPage from './pages/NotFoundPage'
-import PlaceholderPage from './pages/PlaceholderPage'
 import RegisterPage from './pages/RegisterPage'
+import TemplatesPage from './pages/TemplatesPage'
 
 const AuthPreviewPage = import.meta.env.DEV
   ? lazy(() => import('./pages/AuthPreviewPage'))
@@ -20,6 +22,7 @@ const DecisionsPreviewPage = import.meta.env.DEV
 
 function App() {
   const { user } = useDemoSession()
+  const location = useLocation()
   return (
     <AppShell>
       <Routes>
@@ -60,41 +63,14 @@ function App() {
               <Navigate
                 to="/login"
                 replace
-                state={{ returnTo: '/decisions/new' }}
+                state={{ returnTo: `${location.pathname}${location.search}` }}
               />
             )
           }
         />
-        <Route
-          path="/decisions/:id/result"
-          element={
-            <PlaceholderPage
-              eyebrow="Decision results"
-              title="Results"
-              description="The ranked options and explanations will appear here after the decision is calculated by the backend."
-            />
-          }
-        />
-        <Route
-          path="/decisions/:id"
-          element={
-            <PlaceholderPage
-              eyebrow="Decision workspace"
-              title="Build your decision"
-              description="Add options, define weighted criteria, and score each option in the workspace."
-            />
-          }
-        />
-        <Route
-          path="/templates"
-          element={
-            <PlaceholderPage
-              eyebrow="Get a head start"
-              title="Decision templates"
-              description="Browse reusable starting points for common decisions."
-            />
-          }
-        />
+        <Route path="/decisions/:id/result" element={<DecisionResultsPage />} />
+        <Route path="/decisions/:id" element={<DecisionWorkspacePage />} />
+        <Route path="/templates" element={<TemplatesPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AppShell>
