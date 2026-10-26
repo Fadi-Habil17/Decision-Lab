@@ -13,7 +13,7 @@ import {
   type DecisionRecord,
   type DecisionScore,
 } from '../decisions/api'
-import { useDemoSession } from '../demo/session'
+import { useAuth } from '../auth/session'
 import '../styles/workspace.css'
 
 type WorkspaceState =
@@ -39,7 +39,7 @@ function DecisionWorkspacePage() {
   const { id: rawId } = useParams()
   const id = Number(rawId)
   const navigate = useNavigate()
-  const { user } = useDemoSession()
+  const { user } = useAuth()
   const [state, setState] = useState<WorkspaceState>({ kind: 'loading' })
   const [options, setOptions] = useState<EditorOption[]>([])
   const [criteria, setCriteria] = useState<EditorCriterion[]>([])

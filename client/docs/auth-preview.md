@@ -1,5 +1,7 @@
 # Authentication UI preview
 
+> Historical static-stage documentation. Product forms now use [real authentication](auth-integration.md); demo controls do not sign users in.
+
 This stage adds the login/register interface and a temporary demo session to the existing React application. It does not authenticate a user, create an account, or contact the backend. Decisions, Templates, Workspace, and Results remain publicly browsable. The subsequent [decisions list stage](decisions-preview.md) adds local list interactions and requires the demo user for New Decision. The subsequent creation stage adds the local form; see [the frontend handoff](frontend-handoff.md).
 
 ## Run and check
