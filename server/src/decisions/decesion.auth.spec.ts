@@ -3,7 +3,7 @@ import { JwtModule, JwtService } from '@nestjs/jwt';
 import { getModelToken } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
 import { CountersService } from '../common/counters/counters.service.js';
-import { AllExceptionsFilter } from '../common/filters/all-exceptions.filter';
+import { AllExceptionsFilter } from '../common/filters/all-exceptions.filter.js';
 import { TemplatesService } from '../templates/templates.service.js';
 import { UsersService } from '../users/users.service.js';
 import { DecisionsController } from './decisions.controller.js';

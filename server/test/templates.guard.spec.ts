@@ -2,10 +2,11 @@ import { ForbiddenException } from '@nestjs/common';
 import type { ExecutionContext } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 import { InternalToolGuard } from '../src/auth/internal-tool.guard.js';
+import type { UserRole } from '../src/users/schemas/user.schema.js';
 
 // Exercise the shared Admin-OR-key policy required by template mutations.
 // Actual controller/HTTP coverage follows when the template routes exist.
-function setup(options: { role?: 'User' | 'Admin'; key?: string }) {
+function setup(options: { role?: UserRole; key?: string }) {
   const user = options.role
     ? {
         id: 7,

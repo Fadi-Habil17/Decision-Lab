@@ -33,6 +33,8 @@ Swagger UI is available at <http://localhost:3000/docs>.
 | POST | `/decisions/:id/finalize` | Authenticated owner |
 | POST | `/decisions/:id/reopen` | Authenticated owner |
 | GET | `/templates` and `/templates/:id` | Public |
+| POST | `/templates` | Admin OR valid internal-tool key |
+| PATCH / DELETE | `/templates/:id` | Admin OR valid internal-tool key |
 
 Send the access token as `Authorization: Bearer <token>`. Login and registration
 return an access token and safe user profile. Public reads do not require a
@@ -48,6 +50,9 @@ Calculation response field definitions, weighting behavior, tie rules and
 lifecycle notes are documented in [CALCULATION_HANDOFF.md](./CALCULATION_HANDOFF.md).
 Example data and restart verification are documented in
 [VERIFICATION.md](./VERIFICATION.md).
+
+Template request/response examples, validation rules, authorization and snapshot
+tests are documented in [Templates API](./src/templates/README.md).
 
 ## Checks
 
